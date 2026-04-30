@@ -1,0 +1,10 @@
+{
+  "id": "obsidian-note-feed",
+  "name": "Obsidian Note Feed",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Weighted note feed for rediscovering notes.",
+  "author": "Rohan",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
