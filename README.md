@@ -47,9 +47,9 @@ Notes with zero opens in the active trailing window are excluded from the "most-
 
 Copy `manifest.json`, `main.js`, and `styles.css` into your vault plugin folder:
 
-`.obsidian/plugins/obsidian-note-feed/`
+`.obsidian/plugins/note-feed/`
 
-Then enable **Obsidian Note Feed** in Obsidian Community Plugins.
+Then enable **Note Feed** in Obsidian Community Plugins.
 
 ## Community release files
 
