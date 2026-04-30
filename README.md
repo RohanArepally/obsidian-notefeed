@@ -1,69 +1,48 @@
 # Obsidian Note Feed
 
-An Obsidian plugin that builds a card-based feed of notes using a simple weighted algorithm:
+Obsidian Note Feed is a community plugin that surfaces notes in a ranked feed to help you revisit and rediscover content in your vault.
 
-- 10% random picks
+## Ranking Model
+
+The feed uses weighted sampling across four buckets:
+
+- 10% random notes
 - 30% newly created notes
-- 40% recently opened/edited notes
-- 20% most-opened notes in trailing configurable window (90 days by default)
-- Shows all available notes by default (no 20-card cap)
+- 40% recently opened or edited notes
+- 20% most-opened notes in a trailing configurable window (90 days by default)
+
+Notes with zero opens in the active window are excluded from the most-opened bucket.
 
 ## Features
 
-- Custom `Notes Feed` view with a left-sidebar ribbon icon
-- Card UI with title, ~150 character plaintext preview, and reason/date footer
-- Refresh button in the view header
+- Dedicated `Notes Feed` view with ribbon icon and command
+- Card layout with title, plaintext preview, and reason/date metadata
 - Open tracking persisted in plugin data
-- Rename/delete-safe state migration and cleanup
+- Safe handling for file rename and delete events
+- Manual refresh action in the feed view
 
-## State Model
+## Installation (Manual)
 
-Persisted data shape:
-
-```ts
-{
-  openCounts: {
-    [path: string]: {
-      count: number;
-      lastOpened: number;
-      recentOpenTimestamps?: number[];
-    }
-  }
-}
-```
-
-`recentOpenTimestamps` are pruned to the trailing window (90 days by default) so most-opened ranking reflects recent behavior.
-
-Notes with zero opens in the active trailing window are excluded from the "most-opened" bucket.
+1. Run `npm install`
+2. Run `npm run build`
+3. Copy `manifest.json`, `main.js`, and `styles.css` to:
+   - `.obsidian/plugins/obsidian-note-feed/`
+4. Enable **Obsidian Note Feed** in Community Plugins settings
 
 ## Development
 
-1. Install dependencies:
-   - `npm install`
-2. Build once:
-   - `npm run build`
-3. Watch in development:
-   - `npm run dev`
+- Build once: `npm run build`
+- Watch mode: `npm run dev`
 
-Copy `manifest.json`, `main.js`, and `styles.css` into your vault plugin folder:
+## Release Artifacts
 
-`.obsidian/plugins/note-feed/`
-
-Then enable **Note Feed** in Obsidian Community Plugins.
-
-## Community release files
-
-This repository includes the files Obsidian community releases expect:
+Each release must include:
 
 - `manifest.json`
 - `main.js`
 - `styles.css`
 - `versions.json`
 
-## Releasing and first submission
+## Releasing
 
-See `RELEASING.md` for:
-
-- version bump process
-- GitHub release packaging
-- first-time submission steps to the Obsidian community plugin index
+See `RELEASING.md` for versioning, release packaging, and first-time submission steps for the Obsidian community plugin index.
