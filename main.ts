@@ -263,6 +263,9 @@ class NoteFeedView extends ItemView {
   private renderedCount = 0;
   private listEl: HTMLElement | null = null;
   private rendering = false;
+  private refreshTimer: number | null = null;
+  private cardUpdateTimer: number | null = null;
+  private pendingCardUpdates = new Set<string>();
 
   constructor(leaf: WorkspaceLeaf, plugin: NotesFeedPlugin) {
     super(leaf);
@@ -285,6 +288,10 @@ class NoteFeedView extends ItemView {
     this.addAction("refresh-cw", "Refresh feed", async () => {
       await this.refreshFeed(true);
     });
+    this.registerMarkdownVaultEvent("create", () => this.scheduleRefresh());
+    this.registerMarkdownVaultEvent("delete", () => this.scheduleRefresh());
+    this.registerMarkdownVaultEvent("rename", () => this.scheduleRefresh());
+    this.registerMarkdownVaultEvent("modify", (file) => this.scheduleCardUpdate(file));
     await this.refreshFeed(false);
   }
 
@@ -293,6 +300,87 @@ class NoteFeedView extends ItemView {
     if (this.scrollIdleTimer !== null) {
       window.clearTimeout(this.scrollIdleTimer);
       this.scrollIdleTimer = null;
+    }
+    if (this.refreshTimer !== null) {
+      window.clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+    if (this.cardUpdateTimer !== null) {
+      window.clearTimeout(this.cardUpdateTimer);
+      this.cardUpdateTimer = null;
+    }
+    this.pendingCardUpdates.clear();
+  }
+
+  private registerMarkdownVaultEvent(
+    event: "create" | "delete" | "rename" | "modify",
+    handler: (file: TFile) => void
+  ): void {
+    this.registerEvent(
+      this.app.vault.on(event, (file) => {
+        if (!(file instanceof TFile) || file.extension !== "md") {
+          return;
+        }
+        handler(file);
+      })
+    );
+  }
+
+  private scheduleRefresh(delayMs = 300): void {
+    if (this.refreshTimer !== null) {
+      window.clearTimeout(this.refreshTimer);
+    }
+    this.refreshTimer = window.setTimeout(() => {
+      this.refreshTimer = null;
+      if (this.scrolling) {
+        this.scheduleRefresh(delayMs);
+        return;
+      }
+      void this.refreshFeed(false);
+    }, delayMs);
+  }
+
+  private scheduleCardUpdate(file: TFile, delayMs = 400): void {
+    this.pendingCardUpdates.add(file.path);
+    if (this.cardUpdateTimer !== null) {
+      window.clearTimeout(this.cardUpdateTimer);
+    }
+    this.cardUpdateTimer = window.setTimeout(() => {
+      this.cardUpdateTimer = null;
+      const paths = [...this.pendingCardUpdates];
+      this.pendingCardUpdates.clear();
+      void this.updateCardsForPaths(paths);
+    }, delayMs);
+  }
+
+  private async updateCardsForPaths(paths: string[]): Promise<void> {
+    if (!this.listEl) {
+      return;
+    }
+
+    for (const path of paths) {
+      const file = this.app.vault.getAbstractFileByPath(path);
+      if (!(file instanceof TFile)) {
+        continue;
+      }
+
+      const card = this.listEl.querySelector(
+        `[data-path="${CSS.escape(path)}"]`
+      );
+      if (!card) {
+        continue;
+      }
+
+      const previewEl = card.querySelector(".notes-feed-preview");
+      if (previewEl) {
+        const preview = await this.plugin.readPreview(file);
+        previewEl.textContent = preview || "Empty note";
+      }
+
+      const item = this.items.find((entry) => entry.candidate.file.path === path);
+      if (item) {
+        item.candidate.modified = file.stat.mtime;
+      }
     }
   }
 
@@ -346,6 +434,7 @@ class NoteFeedView extends ItemView {
     for (let i = this.renderedCount; i < upperBound; i += 1) {
       const item = this.items[i];
       const card = this.listEl.createDiv({ cls: "notes-feed-card" });
+      card.setAttr("data-path", item.candidate.file.path);
       card.setAttr("role", "button");
       card.setAttr("tabindex", "0");
       card.setAttr("aria-label", `Open note ${item.candidate.title}`);
@@ -353,6 +442,7 @@ class NoteFeedView extends ItemView {
         cls: "notes-feed-title",
         text: item.candidate.title,
       });
+      card.addClass("notes-feed-card-enter");
 
       const preview = await this.plugin.readPreview(item.candidate.file);
       card.createEl("p", {
@@ -387,6 +477,11 @@ class NoteFeedView extends ItemView {
         if (!opened) {
           card.remove();
         }
+      });
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          card.removeClass("notes-feed-card-enter");
+        });
       });
     }
     this.renderedCount = upperBound;

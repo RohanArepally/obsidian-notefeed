@@ -14,11 +14,19 @@
   padding: 12px;
   background: var(--background-secondary);
   cursor: pointer;
+  opacity: 1;
+  transform: translateY(0) scale(1);
   transition:
+    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
     transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
     background-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     border-color 180ms cubic-bezier(0.23, 1, 0.32, 1),
     box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.notes-feed-card-enter {
+  opacity: 0;
+  transform: translateY(6px) scale(0.99);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -73,6 +81,11 @@
   }
 
   .notes-feed-card:active {
+    transform: none;
+  }
+
+  .notes-feed-card-enter {
+    opacity: 1;
     transform: none;
   }
 }
